@@ -1,0 +1,14 @@
+version: 1
+config:
+    - type: physical
+      name: ens18
+      subnets:
+      - type: static
+        address: '<machine-ip>'
+        netmask: '255.255.255.0'
+        gateway: '192.168.100.1'
+    - type: nameserver
+      address:
+      - '192.168.100.1'
+      search:
+      - 'lotds.duckdns.org'

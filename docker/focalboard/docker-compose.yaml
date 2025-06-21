@@ -1,0 +1,13 @@
+services:
+    focalboard:
+        stdin_open: true
+        tty: true
+        # ports:
+        #     - 80:8000
+        image: mattermost/focalboard
+        networks:
+            - npm_shared
+networks:
+  npm_shared:
+    external: true
+    name: npm_shared

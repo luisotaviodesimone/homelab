@@ -1,0 +1,51 @@
+- hosts: all
+  become_method: ansible.builtin.sudo
+  become: true
+  tasks:
+    - name: Update package manager cache
+      package:
+        update_cache: yes
+
+    - name: Install samba share
+      package:
+        name: samba
+        state: latest
+
+    - name: Create a directory for Samba share
+      file:
+        path: /srv/samba/anapaulatorres
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0777'
+
+    - name: Create Samba configuration for the share
+      blockinfile:
+        path: /etc/samba/smb.conf
+        block: |
+          [Global]
+          vfs objects = fruit streams_xattr
+          fruit:metadata = stream
+          fruit:model = MacSamba
+          fruit:veto_appledouble = no
+          fruit:nfs_aces = no
+          fruit:wipe_intentionally_left_blank_rfork = yes
+          fruit:delete_empty_adfiles = yes
+          fruit:posix_rename = yes
+          [TimeMachineBackup]
+          fruit:time machine = yes
+          #  fruit:time machine max size = SIZE
+          [anapaulatorres]
+          comment = Samba on Ubuntu
+          path = /srv/samba/anapaulatorres
+          read only = no
+          guest ok = yes
+          browsable = yes
+    - name: Restart Samba services
+      service:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - smbd
+        - nmbd
+

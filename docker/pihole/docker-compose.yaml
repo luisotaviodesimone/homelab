@@ -1,0 +1,26 @@
+services:
+  pihole:
+    hostname: pihole
+    cap_add:
+      - NET_ADMIN
+      - SYS_TIME
+      - SYS_NICE
+    container_name: pihole
+    environment:
+      FTLCONF_dns_listeningMode: all
+      FTLCONF_webserver_api_password: <password>
+      TZ: America/Sao_Paulo
+    image: pihole/pihole:latest
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+    volumes:
+      - ./etc-pihole:/etc/pihole
+    restart: unless-stopped
+    networks:
+      - npm_shared
+networks:
+  npm_shared:
+    external: true
+    name: npm_shared
+
