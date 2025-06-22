@@ -17,3 +17,9 @@ resource "pihole_dns_record" "ubuntu3" {
   domain = "ubuntu3.lotds.duckdns.org"
   ip     = "192.168.100.203"
 }
+
+resource "pihole_dns_record" "napoleao" {
+  domain = "napoleao.lotds.duckdns.org"
+  ip     = "192.168.100.111"
+}
+
