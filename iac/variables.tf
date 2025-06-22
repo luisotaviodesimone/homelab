@@ -12,7 +12,7 @@ variable "ssh_pub_key_path" {
 variable "pve_host" {
   description = "Proxmox VE host"
   type        = string
-  default    = "napoleao.lotds.duckdns.org"
+  default     = "napoleao.lotds.duckdns.org"
 }
 
 variable "pve_user" {

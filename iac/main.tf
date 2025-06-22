@@ -14,8 +14,8 @@ terraform {
     }
   }
   backend "s3" {
-    bucket  = "opentofu"
-    key     = "terraform.tfstate"
+    bucket = "opentofu"
+    key    = "terraform.tfstate"
 
     endpoints = {
       s3 = "https://minioapi.lotds.duckdns.org"
