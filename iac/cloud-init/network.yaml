@@ -4,11 +4,11 @@ config:
       name: ens18
       subnets:
       - type: static
-        address: '<machine-ip>'
-        netmask: '255.255.255.0'
-        gateway: '192.168.100.1'
+        address: ${machine_ip}
+        netmask: 255.255.255.0
+        gateway: 192.168.100.1
     - type: nameserver
       address:
-      - '192.168.100.1'
+      - 192.168.100.1
       search:
-      - 'lotds.duckdns.org'
+      - lotds.duckdns.org
