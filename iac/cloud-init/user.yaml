@@ -1,9 +1,9 @@
 #cloud-config
 preserve_hostname: false
-hostname: <hostname>
+hostname: ${hostname}
 create_hostname_file: true
 manage_etc_hosts: true
-fqdn: <hostname>
+fqdn: ${hostname}
 
 package_upgrade: true
 package_update: true
@@ -15,9 +15,9 @@ packages:
   - nmap
 
 user: luisotaviodesimone
-password: <password-generated-with-(mkpasswd -m sha-512)>
+password: ${mkpasswd_sha_512_password}
 ssh_authorized_keys:
-  - <ssh-pub-key-from-(~/.ssh/id_somealgorithm.pub)>
+  - ${ssh_pub_key}
 chpasswd:
   expire: False
 users:
