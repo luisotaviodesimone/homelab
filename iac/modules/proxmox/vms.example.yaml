@@ -1,0 +1,12 @@
+virtual_machines:
+  - name: example-vm
+    vmid: 100
+    cores: 2
+    memory: 2048
+    disk:
+      size: 32G
+    network:
+      - ip: 192.168.100.201
+        netmask: 255.255.255.0
+        gateway: 192.168.100.1
+    template: "Ubuntu-Noble-Template"
