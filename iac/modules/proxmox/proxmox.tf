@@ -29,7 +29,7 @@ resource "null_resource" "cloud_init_user_config_files" {
         ssh_pub_key               = file(var.ssh_pub_key_path),
       }
     )
-    destination = "/var/lib/vz/snippets/user_data_vm-${each.key}.yml"
+    destination = "/var/lib/vz/snippets/user_data_vm-${each.key}.yaml"
   }
   triggers = {
     content = file("${path.module}/cloud-init/user.yaml")
@@ -49,7 +49,7 @@ resource "null_resource" "cloud_init_network_config_files" {
   provisioner "file" {
     content = templatefile("${path.module}/cloud-init/network.yaml",
       {
-        machine_ip = each.value.machine_ip,
+        machine_ip = each.value.networks[0].ip_address,
       }
     )
     destination = "/var/lib/vz/snippets/network_data_vm-${each.key}.yaml"
@@ -73,7 +73,7 @@ resource "proxmox_vm_qemu" "cloudinit-test" {
   target_node = "napoleao"
 
   clone     = each.value.template
-  cicustom  = "user=local:snippets/user_data_vm-${each.key},network=local:snippets/network_data_vm-${each.key}"
+  cicustom  = "user=local:snippets/user_data_vm-${each.key}.yaml,network=local:snippets/network_data_vm-${each.key}.yaml"
   ciupgrade = true
   os_type   = "cloud-init"
 
@@ -103,20 +103,6 @@ resource "proxmox_vm_qemu" "cloudinit-test" {
     type = "serial0"
   }
 
-  # disk {
-  #   type    = "cloudinit"
-  #   slot    = "ide2"
-  #   storage = "local-lvm"
-  # }
-
-  # disk {
-  #   type        = "disk"
-  #   disk_file   = "local-lvm:vm-${404 + count.index}-disk-0"
-  #   passthrough = true
-  #   replicate   = true
-  #   slot        = "scsi0"
-  # }
-
   disks {
     ide {
       ide2 {
@@ -142,4 +128,3 @@ resource "proxmox_vm_qemu" "cloudinit-test" {
   }
 
 }
-

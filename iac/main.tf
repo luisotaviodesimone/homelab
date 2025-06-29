@@ -35,6 +35,6 @@ module "proxmox" {
 
   vms              = local.vms
   ssh_pub_key_path = "~/.ssh/id_rsa.pub"
-  pve_host         = "proxmox.lotds.duckdns.org"
+  pve_host         = "napoleao.lotds.duckdns.org"
   pve_password     = var.pve_password
 }

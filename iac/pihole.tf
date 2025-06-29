@@ -9,9 +9,6 @@ variable "dns_records" {
     "gatekeeper.lotds.duckdns.org" = "192.168.100.200"
     "napoleao.lotds.duckdns.org"   = "192.168.100.111"
     "samba.lotds.duckdns.org"      = "192.168.100.200"
-    "ubuntu1.lotds.duckdns.org"    = "192.168.100.201"
-    "ubuntu2.lotds.duckdns.org"    = "192.168.100.202"
-    "ubuntu3.lotds.duckdns.org"    = "192.168.100.203"
   }
 }
 
