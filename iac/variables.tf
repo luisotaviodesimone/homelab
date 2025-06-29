@@ -4,3 +4,9 @@ variable "pihole_password" {
   sensitive   = true
 }
 
+variable "pve_password" {
+  description = "Proxmox VE password"
+  type        = string
+  sensitive   = true
+}
+

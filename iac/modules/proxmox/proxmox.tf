@@ -11,20 +11,9 @@ data "external" "password_hash" {
   }
 }
 
-variable "vm_count" {
-  description = "Number of VMs to create"
-  type        = number
-  default     = 1
-}
-
-variable "vm_memory_mb" {
-  description = "The amount of memory of a given machine in megabytes"
-  type        = number
-  default     = 2048
-}
-
 resource "null_resource" "cloud_init_user_config_files" {
-  count = var.vm_count
+  for_each = { for vm in var.vms : vm.name => vm }
+
   connection {
     type     = "ssh"
     host     = var.pve_host
@@ -35,12 +24,12 @@ resource "null_resource" "cloud_init_user_config_files" {
   provisioner "file" {
     content = templatefile("${path.module}/cloud-init/user.yaml",
       {
-        hostname                  = "ubuntu-${count.index + 1}",
+        hostname                  = "${each.key}",
         mkpasswd_sha_512_password = data.external.password_hash.result["hash"]
         ssh_pub_key               = file(var.ssh_pub_key_path),
       }
     )
-    destination = "/var/lib/vz/snippets/user_data_vm-${count.index + 1}.yml"
+    destination = "/var/lib/vz/snippets/user_data_vm-${each.key}.yml"
   }
   triggers = {
     content = file("${path.module}/cloud-init/user.yaml")
@@ -48,7 +37,8 @@ resource "null_resource" "cloud_init_user_config_files" {
 }
 
 resource "null_resource" "cloud_init_network_config_files" {
-  count = var.vm_count
+  for_each = { for vm in var.vms : vm.name => vm }
+
   connection {
     type     = "ssh"
     host     = var.pve_host
@@ -59,10 +49,10 @@ resource "null_resource" "cloud_init_network_config_files" {
   provisioner "file" {
     content = templatefile("${path.module}/cloud-init/network.yaml",
       {
-        machine_ip = "192.168.100.${204 + count.index}",
+        machine_ip = each.value.machine_ip,
       }
     )
-    destination = "/var/lib/vz/snippets/network_data_vm-${count.index + 1}.yaml"
+    destination = "/var/lib/vz/snippets/network_data_vm-${each.key}.yaml"
   }
   triggers = {
     content = file("${path.module}/cloud-init/network.yaml")
@@ -70,24 +60,25 @@ resource "null_resource" "cloud_init_network_config_files" {
 }
 
 resource "proxmox_vm_qemu" "cloudinit-test" {
-  count = var.vm_count
+  for_each = { for vm in var.vms : vm.name => vm }
+
   depends_on = [
     null_resource.cloud_init_user_config_files,
     null_resource.cloud_init_network_config_files,
   ]
 
-  name        = "ubuntu4"
-  vmid        = 404 + count.index
+  name        = each.value.name
+  vmid        = each.value.vmid
   desc        = "tofu test"
   target_node = "napoleao"
 
-  clone     = "Ubuntu-Noble-Template"
-  cicustom  = "user=local:snippets/user_data_vm-${count.index + 1}.yml,network=local:snippets/network_data_vm-${count.index + 1}.yaml"
+  clone     = each.value.template
+  cicustom  = "user=local:snippets/user_data_vm-${each.key},network=local:snippets/network_data_vm-${each.key}"
   ciupgrade = true
   os_type   = "cloud-init"
 
-  memory  = var.vm_memory_mb
-  balloon = var.vm_memory_mb / 2
+  memory  = each.value.memory_mb
+  balloon = each.value.memory_mb / 2
 
   scsihw = "virtio-scsi-pci"
   agent  = 1
@@ -139,7 +130,7 @@ resource "proxmox_vm_qemu" "cloudinit-test" {
       scsi0 {
         passthrough {
           replicate = true
-          file      = "local-lvm:vm-${404 + count.index}-disk-0"
+          file      = "local-lvm:vm-${each.value.vmid}-disk-0"
         }
       }
     }
