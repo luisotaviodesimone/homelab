@@ -4,10 +4,6 @@ terraform {
       source  = "iolave/pihole"
       version = "0.2.2-beta.2"
     }
-    proxmox = {
-      source  = "telmate/proxmox"
-      version = "3.0.2-rc01"
-    }
     nginxproxymanager = {
       source  = "home-devops/nginxproxymanager"
       version = "1.1.3"
@@ -30,6 +26,15 @@ terraform {
   }
 }
 
-# module "proxmox" {
-#   source = "./modules/proxmox"
-# }
+locals {
+  vms = yamldecode(file("${path.module}/vms.yaml"))
+}
+
+module "proxmox" {
+  source           = "./modules/proxmox"
+
+  vms              = local.vms
+  ssh_pub_key_path = "~/.ssh/id_rsa.pub"
+  pve_host         = "proxmox.lotds.duckdns.org"
+  pve_password     = var.pve_password
+}
