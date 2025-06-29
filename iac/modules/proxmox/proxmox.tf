@@ -114,9 +114,10 @@ resource "proxmox_vm_qemu" "cloudinit-test" {
 
     scsi {
       scsi0 {
-        passthrough {
+        disk {
           replicate = true
-          file      = "local-lvm:vm-${each.value.vmid}-disk-0"
+          storage   = "local-lvm"
+          size      = each.value.disks["1"].size_gb
         }
       }
     }

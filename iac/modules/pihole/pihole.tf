@@ -1,8 +1,3 @@
-provider "pihole" {
-  url      = "https://pihole.lotds.duckdns.org" # PIHOLE_URL
-  password = var.pihole_password                # PIHOLE_PASSWORD
-}
-
 variable "dns_records" {
   type = map(string)
   default = {
@@ -17,5 +12,15 @@ resource "pihole_dns_record" "records" {
 
   domain = each.key
   ip     = each.value
+}
+
+resource "pihole_dns_record" "additional_records" {
+  for_each = { for vm in var.vms : vm.name => {
+    domain = "${vm.name}.lotds.duckdns.org"
+    ip   = vm.networks[0].ip_address
+  } if vm.networks[0].ip_address != "" }
+
+  domain = each.value.domain
+  ip     = each.value.ip
 }
 
