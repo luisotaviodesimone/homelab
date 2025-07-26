@@ -1,5 +1,5 @@
 # UNTESTESTED
-- name: Configure Kubernetes node
+- name: Install Kubernetes Components
   hosts: all
   become: true
   vars:

@@ -1,0 +1,197 @@
+---
+- name: Instalação e Configuração de Containerd, Runc, CNI Plugins e Kubernetes
+  hosts: node
+  become: true
+  become_method: ansible.builtin.sudo
+  vars:
+    containerd_version: "2.1.3"
+    runc_version: "1.3.0"
+    cni_version: "1.7.1"
+    kubernetes_version: "1.33"
+  tasks:
+    - name: Configurar parâmetros sysctl para Kubernetes
+      ansible.builtin.copy:
+        content: |
+          net.ipv4.ip_forward = 1
+        dest: /etc/sysctl.d/k8s.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Aplicar sysctl
+
+    - name: Desabilitar swap
+      ansible.builtin.command: swapoff -a
+      when: ansible_swaptoggle.swapped|bool
+      changed_when: true
+
+    - name: Comentar entrada de swap no fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\s*)([^#]+\s+swap\s+.*)$'
+        replace: '\1# \2'
+        backup: yes
+
+    - name: Criar diretório para o containerd
+      ansible.builtin.file:
+        path: /usr/local
+        state: directory
+        mode: '0755'
+
+    - name: Baixar e extrair containerd
+      ansible.builtin.unarchive:
+        src: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+        dest: /usr/local
+        remote_src: yes
+      args:
+        creates: /usr/local/bin/containerd # Para garantir idempotência
+
+    - name: Criar diretório para o serviço systemd do containerd
+      ansible.builtin.file:
+        path: /usr/local/lib/systemd/system
+        state: directory
+        mode: '0755'
+
+    - name: Baixar o arquivo de serviço do containerd
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+        dest: /usr/local/lib/systemd/system/containerd.service
+        mode: '0644'
+      notify:
+        - Recarregar daemon systemd
+        - Habilitar e iniciar containerd
+
+    - name: Baixar runc
+      ansible.builtin.get_url:
+        url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
+        dest: "/usr/local/sbin/runc"
+        mode: '0755'
+
+    - name: Criar diretório para plugins CNI
+      ansible.builtin.file:
+        path: /opt/cni/bin
+        state: directory
+        mode: '0755'
+
+    - name: Baixar e extrair plugins CNI
+      ansible.builtin.unarchive:
+        src: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+        dest: /opt/cni/bin
+        remote_src: yes
+      args:
+        creates: /opt/cni/bin/bridge # Para garantir idempotência
+
+    - name: Criar diretório para a configuração do containerd
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Gerar configuração padrão do containerd
+      ansible.builtin.command: containerd config default
+      register: containerd_default_config
+      changed_when: containerd_default_config.rc != 0 # Considera alterado se o comando falhar
+      args:
+        creates: /etc/containerd/config.toml # Para garantir idempotência
+
+    - name: Salvar configuração padrão do containerd
+      ansible.builtin.copy:
+        content: "{{ containerd_default_config.stdout }}"
+        dest: /etc/containerd/config.toml
+        owner: root
+        group: root
+        mode: '0644'
+      when: containerd_default_config is defined and containerd_default_config.stdout != ''
+
+    - name: Adicionar configuração do SystemdCgroup ao config.toml
+      ansible.builtin.blockinfile:
+        path: /etc/containerd/config.toml
+        block: |
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+                [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+                  SystemdCgroup = true
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR SYSTEMD_CGOUP"
+      notify: Reiniciar containerd
+
+    - name: Instalar dependências do Kubernetes
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+        state: present
+        update_cache: yes
+
+    - name: Criar diretório para chaves GPG do APT
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Baixar chave GPG do repositório Kubernetes
+      ansible.builtin.get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        mode: '0644'
+
+    - name: Adicionar repositório Kubernetes ao sources.list.d
+      ansible.builtin.copy:
+        content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /"
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Instalar kubelet, kubeadm e kubectl
+      ansible.builtin.apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+      notify: Habilitar e iniciar kubelet
+
+    - name: Bloquear versões de kubelet, kubeadm e kubectl
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Limpar arquivos de download
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+        - "/tmp/runc.amd64"
+        - "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
+      ignore_errors: yes # Ignora erros se os arquivos já não existirem
+
+  handlers:
+    - name: Aplicar sysctl
+      ansible.builtin.command: sysctl --system
+
+    - name: Recarregar daemon systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Habilitar e iniciar containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: started
+        enabled: yes
+
+    - name: Reiniciar containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+
+    - name: Habilitar e iniciar kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: started
+        enabled: yes

@@ -1,0 +1,31 @@
+all:
+  vars:
+    my_pub_ssh_key: '/home/luisotaviodesimone/.ssh/id_rsa.pub'
+
+
+
+first_master_node:
+  hosts:
+    node01:
+      ansible_host: 192.168.100.201
+      ansible_user: luisotaviodesimone
+master_nodes:
+  hosts:
+    node02:
+      ansible_host: 192.168.100.202
+      ansible_user: luisotaviodesimone
+    node03:
+      ansible_host: 192.168.100.203
+      ansible_user: luisotaviodesimone
+
+worker_nodes:
+  hosts:
+    node04:
+      ansible_host: 192.168.100.204
+      ansible_user: luisotaviodesimone
+    node05:
+      ansible_host: 192.168.100.205
+      ansible_user: luisotaviodesimone
+    node06:
+      ansible_host: 192.168.100.206
+      ansible_user: luisotaviodesimone

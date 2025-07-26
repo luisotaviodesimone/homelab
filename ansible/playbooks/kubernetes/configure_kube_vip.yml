@@ -1,0 +1,54 @@
+---
+- name: Configurar Kube-VIP
+  hosts: your_control_plane_nodes # Substitua pelo(s) seu(s) nó(s) de plano de controle
+  become: true
+  vars:
+    # Obtém o primeiro IP não-loopback e sua interface, similar ao script bash
+    local_ip: "{{ ansible_default_ipv4.address }}"
+    ip_interface: "{{ ansible_default_ipv4.interface }}"
+
+  tasks:
+    - name: Verificar se 'jq' está instalado
+      ansible.builtin.package:
+        name: jq
+        state: present
+      register: jq_install_status
+      failed_when: not jq_install_status.changed and not jq_install_status.skipped
+
+    - name: Obter a versão mais recente do Kube-VIP
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/kube-vip/kube-vip/releases
+        return_content: yes
+      register: kube_vip_releases_output
+      until: kube_vip_releases_output.status == 200
+      retries: 5
+      delay: 5
+
+    - name: Definir a versão do Kube-VIP
+      ansible.builtin.set_fact:
+        kv_version: "{{ (kube_vip_releases_output.content | from_json)[0].name }}"
+
+    - name: Garantir que o diretório de manifestos do Kubernetes exista
+      ansible.builtin.file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        mode: '0755'
+
+    - name: Criar manifesto Kube-VIP
+      ansible.builtin.shell: |
+        ctr image pull ghcr.io/kube-vip/kube-vip:{{ kv_version }}
+        ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ kv_version }} vip manifest pod \
+          --interface {{ ip_interface }} \
+          --address {{ local_ip }} \
+          --controlplane \
+          --services \
+          --arp \
+          --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
+      args:
+        creates: /etc/kubernetes/manifests/kube-vip.yaml # Garante idempotência: só executa se o arquivo não existir
+      register: kube_vip_manifest
+      # Este comando pode falhar se o containerd ainda não estiver totalmente pronto,
+      # por isso, podemos adicionar retries se necessário.
+      # until: kube_vip_manifest.rc == 0
+      # retries: 5
+      # delay: 10
