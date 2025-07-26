@@ -16,11 +16,18 @@ resource "pihole_dns_record" "records" {
 
 resource "pihole_dns_record" "additional_records" {
   for_each = { for vm in var.vms : vm.name => {
-    domain = "${vm.name}.lotds.duckdns.org"
-    ip   = vm.networks[0].ip_address
+    domain = "${vm.name}"
+    ip     = vm.networks[0].ip_address
   } if vm.networks[0].ip_address != "" }
-
   domain = each.value.domain
   ip     = each.value.ip
 }
 
+resource "pihole_dns_record" "additional_records_duckdns" {
+  for_each = { for vm in var.vms : vm.name => {
+    domain = "${vm.name}.lotds.duckdns.org"
+    ip     = vm.networks[0].ip_address
+  } if vm.networks[0].ip_address != "" }
+  domain = each.value.domain
+  ip     = each.value.ip
+}

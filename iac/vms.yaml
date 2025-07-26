@@ -10,6 +10,7 @@
       netmask: 255.255.255.0
       gateway: 192.168.100.1
   template: Ubuntu-Noble-Template
+
 - name: ubuntu-worker-02
   vmid: 402
   cores: 2
@@ -22,6 +23,7 @@
       netmask: 255.255.255.0
       gateway: 192.168.100.1
   template: Ubuntu-Noble-Template
+
 - name: ubuntu-worker-03
   vmid: 403
   cores: 2
@@ -31,6 +33,45 @@
       size_gb: 42496M
   networks:
     - ip_address: 192.168.100.203
+      netmask: 255.255.255.0
+      gateway: 192.168.100.1
+  template: Ubuntu-Noble-Template
+
+- name: ubuntu-master-04
+  vmid: 404
+  cores: 2
+  memory_mb: 2048
+  disks:
+    '1':
+      size_gb: 42496M
+  networks:
+    - ip_address: 192.168.100.204
+      netmask: 255.255.255.0
+      gateway: 192.168.100.1
+  template: Ubuntu-Noble-Template
+
+- name: ubuntu-master-05
+  vmid: 405
+  cores: 2
+  memory_mb: 2048
+  disks:
+    '1':
+      size_gb: 42496M
+  networks:
+    - ip_address: 192.168.100.205
+      netmask: 255.255.255.0
+      gateway: 192.168.100.1
+  template: Ubuntu-Noble-Template
+
+- name: ubuntu-worker-06
+  vmid: 406
+  cores: 2
+  memory_mb: 2048
+  disks:
+    '1':
+      size_gb: 42496M
+  networks:
+    - ip_address: 192.168.100.206
       netmask: 255.255.255.0
       gateway: 192.168.100.1
   template: Ubuntu-Noble-Template
