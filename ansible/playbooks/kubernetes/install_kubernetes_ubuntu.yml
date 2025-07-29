@@ -1,6 +1,6 @@
 ---
 - name: Instalação e Configuração de Containerd, Runc, CNI Plugins e Kubernetes
-  hosts: node
+  hosts: all
   become: true
   become_method: ansible.builtin.sudo
   vars:
@@ -21,7 +21,7 @@
 
     - name: Desabilitar swap
       ansible.builtin.command: swapoff -a
-      when: ansible_swaptoggle.swapped|bool
+      when: ansible_facts.swaptoggle.swapped | default(false) | bool
       changed_when: true
 
     - name: Comentar entrada de swap no fstab
@@ -128,11 +128,11 @@
         state: directory
         mode: '0755'
 
-    - name: Baixar chave GPG do repositório Kubernetes
-      ansible.builtin.get_url:
-        url: https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key
-        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        mode: '0644'
+    - name: Baixar e adicionar a chave GPG do Kubernetes para APT
+      ansible.builtin.shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Adicionar repositório Kubernetes ao sources.list.d
       ansible.builtin.copy:
@@ -169,7 +169,7 @@
         - "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
         - "/tmp/runc.amd64"
         - "/tmp/cni-plugins-linux-amd64-v{{ cni_version }}.tgz"
-      ignore_errors: yes # Ignora erros se os arquivos já não existirem
+      ignore_errors: true
 
   handlers:
     - name: Aplicar sysctl

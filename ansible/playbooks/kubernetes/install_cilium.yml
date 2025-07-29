@@ -1,0 +1,46 @@
+---
+- name: Instalando Cilium
+  hosts: all
+  become_method: ansible.builtin.sudo
+  become: true
+  vars:
+    local_ip: "{{ ansible_default_ipv4.address }}"
+
+  tasks:
+    - name: Adicionando o repositório do Cilium
+      kubernetes.core.helm_repository:
+        name: cilium
+        repo_url: https://helm.cilium.io/
+    - name: Instalando Cilium
+      kubernetes.core.helm:
+        name: cilium
+        chart_ref: cilium/cilium
+        release_namespace: kube-system
+        atomic: true
+        values:
+          operator:
+            replicas: 1
+          kubeProxyReplacement: true
+          k8sServiceHost: '{{ local_ip }}'
+          k8sServicePort: '6443'
+          hostServices:
+            enabled: false
+          externalIPs:
+            enabled: true
+          nodePort:
+            enabled: true
+          hostPort:
+            enabled: true
+          image:
+            pullPolicy: IfNotPresent
+          ipam:
+            mode: kubernetes
+          ipv4:
+            enabled: true
+          bandwidthManager:
+            enabled: true
+            bbr: true
+          global:
+            containerRuntime:
+              integration: containerd
+              socketPath: /var/run/containerd/containerd.sock

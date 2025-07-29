@@ -2,30 +2,28 @@ all:
   vars:
     my_pub_ssh_key: '/home/luisotaviodesimone/.ssh/id_rsa.pub'
 
-
-
 first_master_node:
   hosts:
-    node01:
-      ansible_host: 192.168.100.201
+    ubuntu-master-01:
+      ansible_host: ubuntu-master-01.lotds.duckdns.org
       ansible_user: luisotaviodesimone
 master_nodes:
   hosts:
-    node02:
-      ansible_host: 192.168.100.202
+    ubuntu-master-04:
+      ansible_host: ubuntu-master-04.lotds.duckdns.org
       ansible_user: luisotaviodesimone
-    node03:
-      ansible_host: 192.168.100.203
+    ubuntu-master-05:
+      ansible_host: ubuntu-master-05.lotds.duckdns.org
       ansible_user: luisotaviodesimone
 
 worker_nodes:
   hosts:
-    node04:
-      ansible_host: 192.168.100.204
+    ubuntu-worker-02:
+      ansible_host: ubuntu-worker-02.lotds.duckdns.org
       ansible_user: luisotaviodesimone
-    node05:
-      ansible_host: 192.168.100.205
+    ubuntu-worker-03:
+      ansible_host: ubuntu-worker-03.lotds.duckdns.org
       ansible_user: luisotaviodesimone
-    node06:
-      ansible_host: 192.168.100.206
+    ubuntu-worker-06:
+      ansible_host: ubuntu-worker-06.lotds.duckdns.org
       ansible_user: luisotaviodesimone

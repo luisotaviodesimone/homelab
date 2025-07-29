@@ -1,0 +1,30 @@
+---
+- name: Gerenciar a Instalação do Helm
+  hosts: all
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Baixar e Instalar o Helm (Alpine)
+      ansible.builtin.shell: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sh
+      args:
+        creates: /usr/local/bin/helm
+      when: ansible_os_family == "Alpine"
+      register: helm_install_alpine
+      changed_when: helm_install_alpine.rc == 0
+
+    - name: Baixar e Instalar o Helm (Debian/RedHat)
+      ansible.builtin.shell: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+      when: ansible_os_family == "Debian" or ansible_os_family == "RedHat"
+      register: helm_install_debian_redhat
+      changed_when: helm_install_debian_redhat.rc == 0
+
+    - name: Configurar KUBECONFIG no /etc/environment
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: KUBECONFIG=/etc/kubernetes/admin.conf
+        create: true
+        state: present

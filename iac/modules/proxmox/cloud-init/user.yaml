@@ -13,6 +13,8 @@ packages:
   - qemu-guest-agent
   - bind-utils
   - nmap
+  - jq
+  - net-tools
 
 user: luisotaviodesimone
 password: ${mkpasswd_sha_512_password}

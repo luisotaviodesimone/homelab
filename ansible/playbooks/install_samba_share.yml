@@ -1,4 +1,5 @@
-- hosts: all
+- name: Install SMB Share
+  hosts: all
   become_method: ansible.builtin.sudo
   become: true
   tasks:
