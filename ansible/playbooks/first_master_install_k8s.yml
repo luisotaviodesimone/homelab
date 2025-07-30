@@ -1,0 +1,90 @@
+---
+- name: K8s Components
+  import_playbook: kubernetes/install_kubernetes_ubuntu.yml
+  vars:
+    target_hosts: first_master_node
+
+- name: KubeVIP
+  import_playbook: kubernetes/configure_kube_vip.yml
+  vars:
+    target_hosts: first_master_node
+
+- name: Configure First Master Node
+  hosts: first_master_node
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Executar kubeadm init para configurar o Control Plane
+      ansible.builtin.shell: |
+        kubeadm init \
+          --control-plane-endpoint "{{ ansible_fqdn }}" \
+          --apiserver-advertise-address "{{ ansible_default_ipv4.address }}" \
+          --skip-phases=addon/kube-proxy \
+          --upload-certs
+      args:
+        creates: /etc/kubernetes/admin.conf
+      register: kubeadm_init_output
+
+    - name: Exibir saída de kubeadm init (opcional)
+      debug:
+        var: kubeadm_init_output.stdout_lines
+      when: kubeadm_init_output is changed
+
+- name: Helm
+  import_playbook: kubernetes/install_helm.yml
+  vars:
+    target_hosts: first_master_node
+
+- name: Cilium
+  import_playbook: kubernetes/install_cilium.yml
+  vars:
+    target_hosts: first_master_node
+
+- name: Get certificate key
+  hosts: first_master_node
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Get kubeadm certificate key
+      command: kubeadm certs certificate-key
+      register: certificate_key
+
+- name: Regenerate certs
+  hosts: first_master_node
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Regenerate command
+      command: kubeadm init phase upload-certs --upload-certs --certificate-key {{ certificate_key.stdout }}
+
+- name: Get control plane join command from master
+  hosts: first_master_node
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Get kubeadm join command for control plane
+      command: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout }}
+      register: join_command_control_plane
+
+    - name: Set join command fact
+      set_fact:
+        control_plane_join_command: "{{ join_command_control_plane.stdout }}"
+      delegate_to: localhost
+      delegate_facts: true
+      run_once: true
+
+- name: Get worker join command from master
+  hosts: first_master_node
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Get kubeadm join command for workers
+      command: kubeadm token create --print-join-command
+      register: join_command_worker
+
+    - name: Set join command fact
+      set_fact:
+        worker_join_command: "{{ join_command_worker.stdout }}"
+      delegate_to: localhost
+      delegate_facts: true
+      run_once: true

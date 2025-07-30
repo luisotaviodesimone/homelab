@@ -1,6 +1,6 @@
 ---
 - name: Instalando Cilium
-  hosts: all
+  hosts: "{{ target_hosts | default('all') }}"
   become_method: ansible.builtin.sudo
   become: true
   vars:

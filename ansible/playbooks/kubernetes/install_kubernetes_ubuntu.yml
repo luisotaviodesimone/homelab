@@ -1,6 +1,6 @@
 ---
 - name: Instalação e Configuração de Containerd, Runc, CNI Plugins e Kubernetes
-  hosts: all
+  hosts: "{{ target_hosts | default('all') }}"
   become: true
   become_method: ansible.builtin.sudo
   vars:
@@ -89,9 +89,6 @@
     - name: Gerar configuração padrão do containerd
       ansible.builtin.command: containerd config default
       register: containerd_default_config
-      changed_when: containerd_default_config.rc != 0 # Considera alterado se o comando falhar
-      args:
-        creates: /etc/containerd/config.toml # Para garantir idempotência
 
     - name: Salvar configuração padrão do containerd
       ansible.builtin.copy:
@@ -100,7 +97,6 @@
         owner: root
         group: root
         mode: '0644'
-      when: containerd_default_config is defined and containerd_default_config.stdout != ''
 
     - name: Adicionar configuração do SystemdCgroup ao config.toml
       ansible.builtin.blockinfile:

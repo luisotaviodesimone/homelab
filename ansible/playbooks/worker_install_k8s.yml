@@ -1,0 +1,5 @@
+---
+- name: K8s Components
+  import_playbook: ./kubernetes/install_kubernetes_ubuntu.yml
+  vars:
+    target_hosts: worker_nodes

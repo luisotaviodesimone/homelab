@@ -1,6 +1,6 @@
 ---
 - name: Gerenciar a Instalação do Helm
-  hosts: all
+  hosts: "{{ target_hosts | default('all') }}"
   become: true
   become_method: ansible.builtin.sudo
   tasks:

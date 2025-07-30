@@ -1,0 +1,10 @@
+---
+- name: K8s Components
+  import_playbook: kubernetes/install_kubernetes_ubuntu.yml
+  vars:
+    target_hosts: master_nodes
+
+- name: KubeVIP
+  import_playbook: kubernetes/configure_kube_vip.yml
+  vars:
+    target_hosts: master_nodes

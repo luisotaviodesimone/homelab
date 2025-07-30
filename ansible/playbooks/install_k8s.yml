@@ -1,0 +1,25 @@
+---
+- name: First Master Installation
+  import_playbook: first_master_install_k8s.yml
+
+- name: Masters Installation
+  import_playbook: masters_install_k8s.yml
+
+- name: Master Join
+  hosts: master_nodes
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Execute join command
+      command: "{{ hostvars['localhost']['control_plane_join_command'] }}"
+
+- name: Workers Installation
+  import_playbook: worker_install_k8s.yml
+
+- name: Workers Join
+  hosts: worker_nodes
+  become: true
+  become_method: ansible.builtin.sudo
+  tasks:
+    - name: Execute join command
+      command: "{{ hostvars['localhost']['worker_join_command'] }}"

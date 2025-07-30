@@ -1,6 +1,6 @@
 ---
 - name: Configurar Kube-VIP
-  hosts: all
+  hosts: "{{ target_hosts | default('all') }}"
   become: true
   vars:
     local_ip: "{{ ansible_default_ipv4.address }}"
@@ -28,8 +28,8 @@
 
     - name: Criar manifesto Kube-VIP
       ansible.builtin.shell: |
-        ctr image pull ghcr.io/kube-vip/kube-vip:{{ kv_version }}
-        ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ kv_version }} vip manifest pod \
+          alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ kv_version }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ kv_version }} vip /kube-vip"
+          kube-vip manifest pod \
           --interface {{ ip_interface }} \
           --address {{ local_ip }} \
           --controlplane \
